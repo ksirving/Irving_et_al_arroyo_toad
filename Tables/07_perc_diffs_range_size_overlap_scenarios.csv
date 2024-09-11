@@ -1,0 +1,11 @@
+"","Scenario","OverlapCount","BaselinePresences","OverlapPerc","FuturePresences","DiffInRangeSize","DiffInRangeSizePerc"
+"1","Amplified Extremes",615,671,91.6542473919523,638,33,4.91803278688525
+"2","Drier",576,671,85.8420268256334,614,57,8.49478390461997
+"3","Hotter",349,671,52.0119225037258,547,124,18.4798807749627
+"4","Large Perturbations, drier/hotter",380,671,56.6318926974665,568,103,15.3502235469449
+"5","Large Perturbations, extremes/hotter",343,671,51.1177347242921,563,108,16.0953800298063
+"6","Large Perturbations, wetter/hotter",323,671,48.1371087928465,546,125,18.628912071535
+"7","Small Perturbations, drier/hotter",507,671,75.5588673621461,639,32,4.76900149031297
+"8","Small Perturbations, extremes/hotter",511,671,76.1549925484352,642,29,4.32190760059613
+"9","Small Perturbations, wetter/hotter",503,671,74.9627421758569,629,42,6.25931445603577
+"10","Wetter",601,671,89.5678092399404,649,22,3.27868852459016

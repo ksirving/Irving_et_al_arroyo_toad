@@ -1,0 +1,12 @@
+"","Scenario2","TotalCells","No","Yes"
+"1","Amplified Extremes",638,333,305
+"2","Baseline",671,348,323
+"3","Drier",614,312,302
+"4","Hotter",547,355,192
+"5","Large Perturbations, drier/hotter",568,355,213
+"6","Large Perturbations, extremes/hotter",563,378,185
+"7","Large Perturbations, wetter/hotter",546,387,159
+"8","Small Perturbations, drier/hotter",639,377,262
+"9","Small Perturbations, extremes/hotter",642,380,262
+"10","Small Perturbations, wetter/hotter",629,363,266
+"11","Wetter",649,355,294
