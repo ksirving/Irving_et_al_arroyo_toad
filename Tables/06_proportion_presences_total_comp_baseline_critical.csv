@@ -1,0 +1,23 @@
+"","Scenario2","Critical","Presences","TotalCells","TotalProp"
+"1","Baseline","No",1060,2234,100
+"2","Baseline","Yes",1174,2234,100
+"3","Wetter","No",959,1908,85.4073410922113
+"4","Wetter","Yes",949,1908,85.4073410922113
+"5","Drier","No",1119,2298,102.864816472695
+"6","Drier","Yes",1179,2298,102.864816472695
+"7","Hotter","No",308,697,31.1996418979409
+"8","Hotter","Yes",389,697,31.1996418979409
+"9","Amplified Extremes","No",1084,2256,100.984780662489
+"10","Amplified Extremes","Yes",1172,2256,100.984780662489
+"11","Small Perturbations, drier/hotter","No",692,1596,71.4413607878245
+"12","Small Perturbations, drier/hotter","Yes",904,1596,71.4413607878245
+"13","Large Perturbations, drier/hotter","No",352,842,37.6902417188899
+"14","Large Perturbations, drier/hotter","Yes",490,842,37.6902417188899
+"15","Small Perturbations, wetter/hotter","No",555,1325,59.3106535362578
+"16","Small Perturbations, wetter/hotter","Yes",770,1325,59.3106535362578
+"17","Large Perturbations, wetter/hotter","No",245,421,18.8451208594449
+"18","Large Perturbations, wetter/hotter","Yes",176,421,18.8451208594449
+"19","Small Perturbations, extremes/hotter","No",657,1522,68.1289167412713
+"20","Small Perturbations, extremes/hotter","Yes",865,1522,68.1289167412713
+"21","Large Perturbations, extremes/hotter","No",327,696,31.1548791405551
+"22","Large Perturbations, extremes/hotter","Yes",369,696,31.1548791405551

@@ -1,0 +1,11 @@
+"","Scenario","FuturePresences","BaselinePresences","DiffInRangeSize","DiffInRangeSizePerc"
+"1","Amplified Extremes",2256,2234,-22,-0.984780662488809
+"2","Drier",2298,2234,-64,-2.86481647269472
+"3","Hotter",697,2234,1537,68.8003581020591
+"4","Large Perturbations, drier/hotter",842,2234,1392,62.3097582811101
+"5","Large Perturbations, extremes/hotter",696,2234,1538,68.8451208594449
+"6","Large Perturbations, wetter/hotter",421,2234,1813,81.1548791405551
+"7","Small Perturbations, drier/hotter",1596,2234,638,28.5586392121755
+"8","Small Perturbations, extremes/hotter",1522,2234,712,31.8710832587287
+"9","Small Perturbations, wetter/hotter",1325,2234,909,40.6893464637422
+"10","Wetter",1908,2234,326,14.5926589077887

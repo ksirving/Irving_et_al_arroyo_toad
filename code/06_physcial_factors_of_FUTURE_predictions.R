@@ -15,54 +15,58 @@ std <- function(x) sd(x)/sqrt(length(x))
 # Upload data ------------------------------------------------------
 
 ## model with hydro
-# hYdMod <- read.csv("ignore/ModelResults/Gridded/03_Av_Probs_Current_RB9.csv")
+hYdMod <- read.csv("ignore/ModelResults/Gridded/02_Av_Probs_Current_RB9.csv")
 # mean(hYdMod$MeanProb) ## 0.3 - average predicted probability, ok to use as it's as good as more complex methods (Liu, 2005)
 # ## 0.535 cut off maximising sensitivity and specificity (more conservative) but better - Liu 2005, 2010?
-# head(hYdMod)
+head(hYdMod)
 
 ## raster results - probability
 # myModProb <- raster("ignore/ModelResults/Gridded/Arroyo_Toad_Prob_Occurrence_RB9.tif")
 # myModProb
 
 ## future data - rename scenarios, drop scenarios not needed
-newData <- read.csv("ignore/2024-08-27_RFpred_output_alldata_rb9future26yr_redo_med_dlt_FFM_test12_test2_scaleraw_capT.csv") %>%
-  rename(Scenario = scenario) %>%
-  mutate(Scenario2 = case_when(Scenario == 21 ~ "Baseline",
-                               Scenario == 3 ~ "Drier",
-                               Scenario == 39 ~ "Wetter",
-                               Scenario == 27 ~ "Hotter",
-                               Scenario == 19 ~ "Amplified Extremes",
-                               Scenario == 32 ~ "Small Perturbations, drier/hotter",
-                               Scenario == 7 ~ "Large Perturbations, drier/hotter",
-                               Scenario == 100 ~ "Large Perturbations, wetter/hotter",
-                               Scenario == 101 ~ "Small Perturbations, wetter/hotter",
-                               Scenario == 102 ~ "Large Perturbations, extremes/hotter",
-                               Scenario == 103 ~ "Small Perturbations, extremes/hotter")) %>%
-  rename(COMID = comid) %>%
+newData <- read.csv("ignore/03_future_ffms.csv") %>%
+  # rename(Scenario = scenario) %>%
+  select(-X) %>%
+  mutate(Scenario = gsub("_", "", Scenario)) %>%
+  mutate(Scenario2 = case_when(Scenario == "S21" ~ "Baseline",
+                               Scenario == "S3" ~ "Drier",
+                               Scenario == "S39" ~ "Wetter",
+                               Scenario == "S27" ~ "Hotter",
+                               Scenario == "S19" ~ "Amplified Extremes",
+                               Scenario == "S32" ~ "Small Perturbations, drier/hotter",
+                               Scenario == "S7" ~ "Large Perturbations, drier/hotter",
+                               Scenario == "S100" ~ "Large Perturbations, wetter/hotter",
+                               Scenario == "S101" ~ "Small Perturbations, wetter/hotter",
+                               Scenario == "S102" ~ "Large Perturbations, extremes/hotter",
+                               Scenario == "S103" ~ "Small Perturbations, extremes/hotter")) %>%
   drop_na(Scenario2) 
 
 sum(is.na(newData))
+head(newData)
 
-## upload comids and cells 
-coms <- read.csv("ignore/03_comids_cells_to_join_New.csv")
-coms
-## join with new data
+unique(newData$Scenario2)
 
-newDataComs <- full_join(coms, newData, by = "COMID", relationship = "many-to-many") %>%
-  # rename(Scenario = scenario) %>%
-  select(-X)
-
-head(newDataComs)
+# ## upload comids and cells 
+# coms <- read.csv("ignore/03_comids_cells_to_join_New.csv")
+# coms
+# ## join with new data
+# 
+# newDataComs <- full_join(coms, newData, by = "COMID", relationship = "many-to-many") %>%
+#   # rename(Scenario = scenario) %>%
+#   select(-X)
+# 
+# head(newDataComs)
 
 ## scenario results
-scenProbs <- read.csv("ignore/FuturePredictions/03_Av_Probs_Future_RB9_extremes_New.csv")%>%
-  select(-c(X,-X.1)) %>%
-  inner_join(newDataComs, by = c("cells","Scenario", "Scenario2"), multiple = "all") ## join with scenario probabilities
+scenProbs <- read.csv("ignore/FuturePredictions/03_Av_Probs_Future_RB9_extremes_New.csv") %>%
+  select(-c(X,X.1)) %>%
+  inner_join(newData, by = c("cells","Scenario", "Scenario2"), multiple = "all") ## join with scenario probabilities
 
 head(scenProbs)
 sum(is.na(scenProbs))
 
-length(unique(scenProbs$cells)) ## 15,993
+length(unique(scenProbs$cells)) ## 16,023
 
 # ## observations
 load(file=paste0("ignore/ModelResults/Gridded/Model1/all_presAbs_env_data.RData"))
@@ -99,9 +103,9 @@ names(alldataDF)
 dataObs <- full_join(alldataDF, obs, by = "cells") %>%
   distinct(cells, .keep_all = T)
 
-length(unique(dataObs$cells)) ## 16017
+length(unique(dataObs$cells)) ## 18244
 head(dataObs)
-# sum(dataObs$ProbOcc > 0.535) ## 2119
+
 
 dataObs <- full_join(dataObs, scenProbs, by = c("cells")) %>%
   select(-c(x.x, y.x)) %>%
@@ -112,18 +116,18 @@ sum(is.na(dataObs))
 
 ## convert prob to binary
 dataObs2 <- dataObs %>%
-  select(-d_peak_5) %>% ## remove peak 5
+  # select(-d_peak_5) %>% ## remove peak 5
   mutate(FuturePresAbs = ifelse(MeanProb < 0.535, 0, 1)) %>%
   mutate(FuturePresAbs = factor(FuturePresAbs, levels = c("1","0"), labels = c("Presence", "Absence"))) %>%
   drop_na(FuturePresAbs, Scenario) %>%
-  rename(DS_Mag_50 = d_ds_mag_50,
-         FA_Mag = d_fa_mag,
-         Peak_10 = d_peak_10,
-         Peak_2 = d_peak_2,
-         SP_Mag = d_sp_mag,
-         Wet_BFL_Mag_10 = d_wet_bfl_mag_10,
-         Wet_BFL_Mag_50 = d_wet_bfl_mag_50,
-         Q99 = delta_q99) %>%
+  # rename(DS_Mag_50 = d_ds_mag_50,
+  #        FA_Mag = d_fa_mag,
+  #        Peak_10 = d_peak_10,
+  #        Peak_2 = d_peak_2,
+  #        SP_Mag = d_sp_mag,
+  #        Wet_BFL_Mag_10 = d_wet_bfl_mag_10,
+  #        Wet_BFL_Mag_50 = d_wet_bfl_mag_50,
+  #        Q99 = delta_q99) %>%
   pivot_longer(c(Elev, DS_Mag_50:Q99), names_to = "Metric", values_to = "Values") %>% ## change variable names
   mutate(VariableHuman = case_when(Metric == "DS_Mag_50" ~ "Dry Season Baseflow",
                                    Metric == "Peak_10" ~ "Peak Flow: 10-Year Flood",
@@ -134,9 +138,19 @@ dataObs2 <- dataObs %>%
                                    Metric == "Wet_BFL_Mag_10" ~ "Wet Season Baseflow (Low)",
                                    Metric == "Wet_BFL_Mag_50" ~ "Wet Season Baseflow (Med)",
                                    Metric == "Elev" ~ "Elevation")) %>%
-  mutate(ValuesMS = ifelse(Metric == "Elev", Values, Values*0.0283168))
+  mutate(ValuesMS = ifelse(Metric == "Elev", Values, Values*0.0283168)) %>%
+  mutate(Scenario2 = factor(Scenario2, levels = c("Baseline", "Wetter","Drier", "Hotter","Amplified Extremes", "Small Perturbations, drier/hotter", "Large Perturbations, drier/hotter",
+                                                  "Small Perturbations, wetter/hotter", "Large Perturbations, wetter/hotter",
+                                                  "Small Perturbations, extremes/hotter", "Large Perturbations, extremes/hotter"),
+                            labels = c("Baseline", "Wetter","Drier", "Hotter","Amplified Extremes", 
+                                       "Drier/hotter (Small)", "Drier/hotter (Large)",
+                                       "Wetter/hotter (Small)", "Wetter/hotter (Large)",
+                                       "Extremes/hotter (Small)", "Extremes/hotter (Large)")))
+
   
 head(dataObs2)
+
+unique(newData$Scenario2)
 # elevation of observations -----------------------------------------------
 
 ## keep only 1 and 0 (remove NAs) from presence absence
@@ -200,7 +214,7 @@ basel <- PresOnly %>%
   select(cells, MeanProb, Metric, Values)
 
 ## define scenarios
-scens <- unique(PresOnly$Scenario2)[-1]
+scens <- unique(PresOnly$Scenario2)
 scens
 scens[1]
 t=5
@@ -303,7 +317,11 @@ PresOnlyx <- PresOnly %>%
   mutate(ValuesMS2 = filter_lims(ValuesMS)) %>%
   mutate(Scenario2 = factor(Scenario2, levels = c("Baseline", "Wetter","Drier", "Hotter","Amplified Extremes", "Small Perturbations, drier/hotter", "Large Perturbations, drier/hotter",
                                                   "Small Perturbations, wetter/hotter", "Large Perturbations, wetter/hotter",
-                                                    "Small Perturbations, extremes/hotter", "Large Perturbations, extremes/hotter")))
+                                                  "Small Perturbations, extremes/hotter", "Large Perturbations, extremes/hotter"),
+                            labels = c("Baseline", "Wetter","Drier", "Hotter","Amplified Extremes", 
+                                       "Drier/hotter (Small)", "Drier/hotter (Large)",
+                                       "Wetter/hotter (Small)", "Wetter/hotter (Large)",
+                                       "Extremes/hotter (Small)", "Extremes/hotter (Large)")))
 
 # lims_y <- c(0.4,1.5,18,150,30,41,0.4, 0.75)
 str(PresOnlyx)
@@ -313,14 +331,16 @@ b2 <- ggplot(PresOnlyx, aes(x=Scenario2, y = ValuesMS2, group = Scenario2, fill 
   geom_boxplot(outliers = FALSE) + ## removes outliers
   theme(axis.text.x = element_blank()) +
   facet_wrap(~VariableHuman, scales = "free_y") +
-  scale_x_discrete(labels = NULL, name = "") +
+  # scale_x_discrete(labels = NULL, name = "") +
+  scale_x_discrete(name = "") +
   scale_y_continuous(name = expression(paste("∆ Flow Magnitude (m"^3~"/s)")), expand = expansion(mult = c(0.1, 0.2))) +  # Adjust the expand values +
   theme_classic() +
-  theme(legend.position = "bottom", 
+  theme(legend.position = "none", 
         strip.text = element_text(size=15),
         axis.title = element_text(size = 15),
         axis.text.y = element_text(size = 12),
-        legend.text=element_text(size=15)) +
+        legend.text = element_text(size=15),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1,size=12)) +
   labs(fill = "") +
   # geom_text(aes(label = pval_star), nudge_y = 0.05)
   stat_summary(
@@ -329,6 +349,7 @@ b2 <- ggplot(PresOnlyx, aes(x=Scenario2, y = ValuesMS2, group = Scenario2, fill 
   )
 
 b2
+
 
 file.name1 <- "Figures/06_Predictions_FFM.jpg"
 ggsave(b2, filename=file.name1, dpi=600, height=8, width=14)
@@ -339,14 +360,15 @@ b3 <- ggplot(PresOnlyx, aes(x=Scenario2, y = ValuesMS, group = Scenario2, fill =
   geom_boxplot() + 
   theme(axis.text.x = element_blank()) +
   facet_wrap(~VariableHuman, scales = "free_y") +
-  scale_x_discrete(labels = NULL, name = "") +
+  # scale_x_discrete(labels = NULL, name = "") +
   scale_y_continuous(name = expression(paste("∆ Flow Magnitude (m"^3~"/s)")), expand = expansion(mult = c(0.1, 0.2))) +  # Adjust the expand values +
   theme_classic() +
-  theme(legend.position = "bottom", 
+  theme(legend.position = "none", 
         strip.text = element_text(size=15),
         axis.title = element_text(size = 15),
         axis.text.y = element_text(size = 12),
-        legend.text=element_text(size=15)) +
+        legend.text = element_text(size=15),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1,size=12)) +
   labs(fill = "") +
   # geom_text(aes(label = pval_star), nudge_y = 0.05)
   stat_summary(
@@ -437,9 +459,28 @@ dataObsSP2 <- dataObsSP %>%
 
 ## add column of whether in protected land
 PlandDataObsJoinx <- PlandDataObsJoin %>%
-  mutate(Protected = ifelse(is.na(UNIT_NAME), "No", "Yes"))
+  mutate(Protected = ifelse(is.na(UNIT_NAME), "No", "Yes")) %>%
+  mutate(Scenario2 = factor(Scenario2, levels = c("Baseline", "Wetter", "Drier", "Hotter", "Amplified Extremes",
+                                       "Small Perturbations, drier/hotter", "Large Perturbations, drier/hotter",
+                                       "Small Perturbations, wetter/hotter", "Large Perturbations, wetter/hotter",
+                                       "Small Perturbations, extremes/hotter", "Large Perturbations, extremes/hotter")))
 
 names(PlandDataObsJoin)
+
+## percentages of total cells predicted presence
+sumScens2 <- PlandDataObsJoinx %>% as.data.frame() %>%
+  select(-geometry) %>%
+  filter(FuturePresAbs == "Presence") %>% ## only presences
+  group_by(Scenario2, Protected) %>%
+  summarise(Presences = length(unique(cells))) %>%
+  ungroup(Protected) %>%
+  mutate(TotalCells = sum(Presences)) %>%
+  mutate(TotalProp = TotalCells/2234*100) ## % cells predicted comared to baseline (2234)
+
+sumScens2
+
+write.csv(sumScens2, "Tables/06_proportion_presences_total_comp_baseline_prot_land.csv")
+
 
 ## get summary states of presences on protected land
 sumScens <- PlandDataObsJoinx %>% as.data.frame() %>%
@@ -450,7 +491,9 @@ sumScens <- PlandDataObsJoinx %>% as.data.frame() %>%
   ungroup(Protected) %>%
   mutate(TotalCells = sum(Presences)) %>%
   group_by(Protected) %>%
-  mutate(Proportion = (Presences/TotalCells)*100) 
+  mutate(Proportion = (Presences/TotalCells)*100) %>%
+  filter(Protected =="Yes") %>%
+  mutate(DiffinOccs =  Presences/1232*100)
 
 sumScens
 
@@ -462,7 +505,7 @@ sumScensWide <- sumScens %>%
 
 sumScensWide
 
-write.csv(sumScensWide, "Tables/06_number_presences_on_critical_habitat_future_scens_wide.csv")
+write.csv(sumScensWide, "Tables/06_number_presences_on_prot_land_future_scens_wide.csv")
 
 
 ## make percentage table - presences
@@ -478,6 +521,7 @@ perctabP
 
 
 write.csv(perctabP, "Tables/06_proportion_presences_on_prot_land_future_scens.csv")
+
 
 ## same for pendleton
 # PendDataObsJoin <- PendDataObsJoin %>%
@@ -570,7 +614,7 @@ crs(rb9CH) == crs(dataObsSP)
 
 ## join pland poly to point data
 CHabDataObsJoin <- st_join(dataObsSP,rb9CH) 
-CHabDataObsJoin
+
 sum(CHabDataObsJoin$MyPresAbs == "Presence") ## 132993
 
 length(unique(CHabDataObsJoin$cells))
@@ -580,9 +624,29 @@ length(CHabDataObsJoin$cells)
 ## add column of wehther in protected or not
 
 CHabDataObsJoin <- CHabDataObsJoin %>%
-  mutate(Critical = ifelse(is.na(UNIT), "No", "Yes"))
+  mutate(Critical = ifelse(is.na(UNIT), "No", "Yes")) %>%
+  mutate(Scenario2 = factor(Scenario2, levels = c("Baseline", "Wetter", "Drier", "Hotter", "Amplified Extremes",
+                                                  "Small Perturbations, drier/hotter", "Large Perturbations, drier/hotter",
+                                                  "Small Perturbations, wetter/hotter", "Large Perturbations, wetter/hotter",
+                                                  "Small Perturbations, extremes/hotter", "Large Perturbations, extremes/hotter")))
+
 
 CHabDataObsJoin
+
+## percentages of total cells predicted presence
+sumScens2 <- CHabDataObsJoin %>% as.data.frame() %>%
+  select(-geometry) %>%
+  filter(FuturePresAbs == "Presence") %>% ## only presences
+  group_by(Scenario2, Critical) %>%
+  summarise(Presences = length(unique(cells))) %>%
+  ungroup(Critical) %>%
+  mutate(TotalCells = sum(Presences)) %>%
+  mutate(TotalProp = TotalCells/2234*100) ## % cells predicted comared to baseline (2234)
+
+sumScens2
+
+write.csv(sumScens2, "Tables/06_proportion_presences_total_comp_baseline_critical.csv")
+
 
 ## get summary states of presences on protected land
 sumScens <- CHabDataObsJoin %>% as.data.frame() %>%
@@ -593,7 +657,9 @@ sumScens <- CHabDataObsJoin %>% as.data.frame() %>%
   ungroup(Critical) %>%
   mutate(TotalCells = sum(Presences)) %>%
   group_by(Critical) %>%
-  mutate(Proportion = (Presences/TotalCells)*100) 
+  mutate(Proportion = (Presences/TotalCells)*100) %>%
+  filter(Critical == "Yes") %>%
+  mutate(DiffinOccs =  Presences/1174*100)
 sumScens
 
 write.csv(sumScens, "Tables/06_number_presences_on_critical_habitat_future_scens.csv")
@@ -614,5 +680,4 @@ perctab <- sumScens %>% as.data.frame() %>%
 perctab
 
 write.csv(perctab, "Tables/06_proportion_presences_on_critical_habitat_future_scens.csv")
-
 

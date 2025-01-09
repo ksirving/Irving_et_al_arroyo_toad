@@ -22,13 +22,28 @@ library(tidylog)
 gridFile <- paste0("ignore/ModelResults/Gridded/")
 
 ## folder for future predictions
-PredFile <- paste0("ignore/FuturePredictions/New")
+PredFile <- paste0("ignore/FuturePredictions")
 
-## gridded env df with comids - model build data
-load(file = "ignore/00_RB9_grdded_data.RData") 
+# ## gridded env df  - model build data
+load(file = "ignore/01_RB9_grdded_data.RData")
 head(data_hyd_sf2)
 
+## read in env data stack
+xvars <- stack("ignore/00_all_rasters_200m.tif") ## new rasters @ 200m 
 
+## upload and add layer names 
+load(file = "ignore/00_final_raster_layer_names.RData")
+names(xvars) <- LayerNames
+LayerNames
+
+## gridded env df 
+data_hyd_sf <- as.data.frame(xvars, xy=T)
+
+## remove NAs and make spatial
+data_hyd_sf <- na.omit(data_hyd_sf) %>%
+  dplyr::select(x,y) %>% st_as_sf(coords = c("x", "y"), crs = crs(xvars))
+
+head(data_hyd_sf)
 ## upload nhd shape
 nhd <- st_read("ignore/SpatialData/NHD_reaches_RB9_castreamclassification.shp")
 
@@ -38,37 +53,105 @@ nhd <- nhd %>%
   st_simplify(dTolerance = 0.5, preserveTopology = T)
 
 ### current predictions
-curObs <- read.csv("ignore/ModelResults/Gridded/Arroyo_Toad_Prob_Occurrence_RB9.csv")
+curObs <- st_read("ignore/ModelResults/Gridded/02_Arroyo_Toad_Prob_Occurrence_RB9.shp")
 curObs
 
-### cells and comids
-coms <- curObs %>%
-  select(cells, COMID) 
+# ### cells and comids
+# coms <- curObs %>%
+#   select(cells, COMID) 
+# 
+# write.csv(coms, "ignore/03_comids_cells_to_join_New.csv")
 
-write.csv(coms, "ignore/03_comids_cells_to_join_New.csv")
 ## join comid to main df by cells
-data_hyd_sf2 <- full_join(coms, data_hyd_sf2, by = "cells")
-data_hyd_sf2
+# data_hyd_sf2 <- full_join(coms, data_hyd_sf2, by = "cells")
+# data_hyd_sf2
 
-## future data
-newData <- read.csv("ignore/2024-08-27_RFpred_output_alldata_rb9future26yr_redo_med_dlt_FFM_test12_test2_scaleraw_capT.csv")
-head(newData)
-str(newData)
 
-## change ffm names to match current names
+# Future data -------------------------------------------------------------
 
-newData <- newData %>%
-  select(-d_peak_5, -n_year) %>%
-  rename(DS_Mag_50 = d_ds_mag_50,
-         FA_Mag = d_fa_mag,
-         Peak_10 = d_peak_10,
-         Peak_2 = d_peak_2,
-         SP_Mag = d_sp_mag,
-         Wet_BFL_Mag_10 = d_wet_bfl_mag_10,
-         Wet_BFL_Mag_50 = d_wet_bfl_mag_50,
-         Q99 = delta_q99,
-         COMID = comid) 
-                                  
+## directory 
+rasFile <- "ignore/futurerasters/"
+
+## define scenarios
+scen <- c( "S3_", "S7_", "S19_", "S21_", "S27_", "S32_", "S39_", "S100_", "S101_", "S102_", "S103_")
+
+## use as baselayer
+elev <- raster("input_data/Elev.tif")
+
+## empty DF
+newDatax <- NULL
+
+## get all files with .tif - these are the main rasters
+tifs <- list.files(path = rasFile, pattern = c(".tif$") )
+
+## loop over sceanrios to get all in one df
+
+for(s in 1:length(scen)) {
+  
+  ## get the scenario we need - here to test 21 = baseline
+  tifsscen <- grep(paste(scen[s]), tifs)
+  tifsscen
+  
+  scen1 <- tifs[tifsscen]
+  scen1 ## has all FFM for one scenario
+  
+  ## upload rasters for scenario
+  hyd1 <- raster(paste0(rasFile, scen1[1]))
+  hyd2 <- raster(paste0(rasFile, scen1[2]))
+  hyd3 <- raster(paste0(rasFile, scen1[3]))
+  hyd4 <- raster(paste0(rasFile, scen1[4]))
+  hyd5 <- raster(paste0(rasFile, scen1[5]))
+  hyd6 <- raster(paste0(rasFile, scen1[6]))
+  hyd7 <- raster(paste0(rasFile, scen1[7]))
+  hyd8 <- raster(paste0(rasFile, scen1[8]))
+  hyd9 <- raster(paste0(rasFile, scen1[9]))
+  
+  ## stack all rasters
+  ffmR <- stack(hyd1, hyd2, hyd3, hyd4, hyd5, hyd6, hyd7, hyd8, hyd9)
+  ffmR
+  
+  ## resample to base layer
+  ffmRes <- resample(ffmR, elev, method = "bilinear")
+  
+  ## extract future data at grid cells
+  newData <- as.data.frame(raster::extract(ffmRes, data_hyd_sf, cellnumbers=TRUE))
+  # newData <- as.data.frame(newData)
+  
+  # head(newData)
+  
+  ## remove scenario number from column names
+  names(newData) <- gsub(paste(scen[s]), "", names(newData))
+  
+  ## change ffm names to match current names
+  newData <- newData %>%
+    select(-d_peak_5) %>%
+    rename(DS_Mag_50 = d_ds_mag_50,
+           FA_Mag = d_fa_mag,
+           Peak_10 = d_peak_10,
+           Peak_2 = d_peak_2,
+           SP_Mag = d_sp_mag,
+           Wet_BFL_Mag_10 = d_wet_bfl_mag_10,
+           Wet_BFL_Mag_50 = d_wet_bfl_mag_50,
+           Q99 = delta_q99) %>%
+    mutate(Scenario = paste(scen[s]))
+  
+  # head(newData)
+  
+  newDatax <- bind_rows(newDatax, newData)
+  
+}
+
+unique(newDatax$Scenario)
+
+## save
+write.csv(newDatax, "ignore/03_future_ffms.csv")
+
+## reload and call it newData
+
+## call it newData
+newData <- read.csv("ignore/03_future_ffms.csv") %>%
+  dplyr::select(-X)
+
 head(newData)
 # Predictions -------------------------------------------------------------
 
@@ -76,8 +159,8 @@ head(newData)
 
 ## remove NAs
 all_data <- na.omit(data_hyd_sf2)
-
-## remove current ffm
+head(all_data)
+## remove current ffm to swap in newdata
 all_data <- all_data %>%
   select(-c(DS_Mag_50:Wet_BFL_Mag_50))
 
@@ -90,7 +173,7 @@ models <- paste0("Model",seq(1, 10,1))
 m="Model2"
 
 ## define scenarios
-scenarios <- unique(newData$scenario)
+scenarios <- unique(newData$Scenario)
 s=1
 
 scenarios
@@ -123,12 +206,12 @@ for(m in models) {
    
    ### filter to scenario
    newDatax <- newData %>%
-     filter(scenario == scenarios[s])
+     filter(Scenario == scenarios[s])
    
    ## join ffm with other env data
    
-   newDatax1 <- inner_join(all_data, newDatax, by = "COMID")
-  head(newDatax1)
+   newDatax1 <- inner_join(all_data, newDatax, by = "cells")
+
   length(unique(newDatax1$cells)) ## 15993
    # pred <- predict(rf.final, all_data, filename= paste0(PredFile, "SppProbs_no_clim_gridded.img"), type="prob",  index=2,
    #                 na.rm=TRUE, overwrite=TRUE, progress="window")
@@ -136,7 +219,7 @@ for(m in models) {
    ## predict on new data as df
    pred_df <- as.data.frame(predict(rf.final, newDatax1, filename= paste0(PredFile, "SppProbs_no_clim_gridded_df.img"), type="prob",  index=2, 
                                     na.rm=TRUE, overwrite=TRUE, progress="window"))
-   ## add comids and cells
+   ## add cells
    pred_df$cells <- newDatax1$cells
    # newDatax1$cells
    # pred_df$COMID <- all_data$COMID
@@ -147,11 +230,12 @@ for(m in models) {
      full_join(newDatax1, by =  c("cells")) %>%
      rename(probOcc = 1) %>%
      # full_join(obs, by = c("cells", "COMID")) %>%
-     dplyr::select(probOcc, cells, COMID, x, y)
+     dplyr::select(probOcc, cells, x, y)
    
    
-   write.csv(pred_env, paste0(PredFile, "03_",scenarios[s],"_probOccs_gridded_New.csv"))
+   write.csv(pred_env, paste0(PredFile, "03_",scenarios[s],"probOccs_gridded_New.csv"))
    PredFile
+   
    # head(pred_env)
  }
   
@@ -185,7 +269,7 @@ for(m in models) {
   # scenList
   ## empty dataframe
   scenprobsx <- NULL
-l
+
     for(l in scenList) {
       
       ## get scenario from file name
@@ -269,17 +353,17 @@ str(probsx_mean)
 ## add senarios combs 
 
 probsx_mean <- probsx_mean %>%
-  mutate(Scenario2 = case_when(Scenario == 21 ~ "Baseline",
-                               Scenario == 3 ~ "Drier",
-                               Scenario == 39 ~ "Wetter",
-                               Scenario == 27 ~ "Hotter",
-                               Scenario == 19 ~ "Amplified Extremes",
-                               Scenario == 32 ~ "Small Perturbations, drier/hotter",
-                               Scenario == 7 ~ "Large Perturbations, drier/hotter",
-                               Scenario == 100 ~ "Large Perturbations, wetter/hotter",
-                               Scenario == 101 ~ "Small Perturbations, wetter/hotter",
-                               Scenario == 102 ~ "Large Perturbations, extremes/hotter",
-                               Scenario == 103 ~ "Small Perturbations, extremes/hotter"))
+  mutate(Scenario2 = case_when(Scenario == "S21" ~ "Baseline",
+                               Scenario == 'S3' ~ "Drier",
+                               Scenario == 'S39' ~ "Wetter",
+                               Scenario == 'S27' ~ "Hotter",
+                               Scenario == 'S19' ~ "Amplified Extremes",
+                               Scenario == 'S32' ~ "Small Perturbations, drier/hotter",
+                               Scenario == 'S7' ~ "Large Perturbations, drier/hotter",
+                               Scenario == 'S100' ~ "Large Perturbations, wetter/hotter",
+                               Scenario == 'S101' ~ "Small Perturbations, wetter/hotter",
+                               Scenario == 'S102' ~ "Large Perturbations, extremes/hotter",
+                               Scenario == 'S103' ~ "Small Perturbations, extremes/hotter"))
 
 probsx_meanx <- probsx_mean %>%
   drop_na(Scenario2) 

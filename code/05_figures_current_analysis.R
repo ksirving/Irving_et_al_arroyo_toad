@@ -49,19 +49,10 @@ cnts <- st_read("ignore/SpatialData/SD_RB9_boundary.shp") %>%
 
 ## load observations
 load(file = "ignore/ModelResults/Gridded/02_obs_probs_current.RData")
-
+head(obs)
 ## load probabilities
-probs_sf <- st_read("ignore/ModelResults/Gridded/Arroyo_Toad_Prob_Occurrence_RB9.shp")
-
-## observations
-## change to wg84 fo map,
-obs_wg84 <- obs %>%
-  st_transform(crs = 4326) 
-
-## make x/y columns
-obs_wg84 <- obs_wg84 %>%
-  mutate(x = st_coordinates(obs_wg84)[,1], y = st_coordinates(obs_wg84)[,2]) %>%
-  filter(PresAbs == 1)
+probs_sf <- st_read("ignore/ModelResults/Gridded/02_Arroyo_Toad_Prob_Occurrence_RB9.shp")
+probs_sf
 
 ## Predictions
 ## change to wg84 for  map, create columns of x & y 

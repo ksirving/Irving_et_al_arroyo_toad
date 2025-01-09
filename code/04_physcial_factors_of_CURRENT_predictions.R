@@ -16,12 +16,12 @@ std <- function(x) sd(x)/sqrt(length(x))
 
 ## model with hydro
 hYdMod <- read.csv("ignore/ModelResults/Gridded/02_Av_Probs_Current_RB9.csv")
-mean(hYdMod$MeanProb) ## 0.3 - average predicted probability, ok to use as it's as good as more complex methods (Liu, 2005)
+mean(hYdMod$MeanProb) ## 0.29 - average predicted probability, ok to use as it's as good as more complex methods (Liu, 2005)
 ## 0.535 cut off maximising sensitivity and specificity (more conservative) but better - Liu 2005, 2010
 head(hYdMod)
 
 ## raster results - probability
-myModProb <- raster("ignore/ModelResults/Gridded/Arroyo_Toad_Prob_Occurrence_RB9.tif")
+myModProb <- raster("ignore/ModelResults/Gridded/02_Arroyo_Toad_Prob_Occurrence_RB9.tif")
 myModProb
 
 ## scenario results
@@ -51,7 +51,7 @@ alldataR <- stack(myModProb, elev)
 ## convert to data frame
 alldataDF <- as.data.frame(alldataR, xy=T)
 alldataDF <- na.omit(alldataDF)
-dim(alldataDF) ##  16,021
+dim(alldataDF) ##  16,023
 ## row names are cells, add as column
 
 alldataDF$cells <- rownames(alldataDF)
@@ -61,7 +61,7 @@ alldataDF$cells <- as.numeric(alldataDF$cells)
 names(alldataDF)
 
 alldataDF <- alldataDF %>%
-  rename(ProbOcc = Arroyo_Toad_Prob_Occurrence_RB9)
+  rename(ProbOcc = "X02_Arroyo_Toad_Prob_Occurrence_RB9")
 
 ## join with obs
 
@@ -187,7 +187,7 @@ sum(is.na(PlandP$UNIT_NAME)) ## 0
 ## join pendleton to protected land
 # PlandP <- st_union(Pland, Pend)
 
-plot(PlandP[2])
+# plot(PlandP[2])
 
 # raster data df 
 ## make spatial
@@ -229,6 +229,7 @@ PlandDataObsJoin <- PlandDataObsJoin %>%
   mutate(MyPresAbs = factor(MyPresAbs, levels = c("1","0"), labels = c("Presence", "Absence")))  
 
 str(PlandDataObsJoin)
+head(PlandDataObsJoin)
 
 st_write(PlandDataObsJoin, "ignore/Protected_Land/04_joined_land_and_mod_data_binary.shp", append=F)
 
@@ -417,33 +418,12 @@ write.csv(perctabP, "Tables/04_proportion_presences_on_critical_habitat_future_s
 
 
 ## counts
-length(CHabDataObsJoin$cells) ## 16,021 grid cells
-sum(CHabDataObsJoin$MyPresAbs == "Presence") ## 2119 predicted presence in study area
-sum(CHabDataObsJoin$Critical == "Yes") ## 2845 points are in critical land in total
-sum(CHabDataObsJoin$Critical == "Yes"& CHabDataObsJoin$MyPresAbs == "Presence") ## 1135 presences are in critical land in total
+length(CHabDataObsJoin$cells) ## 16,023 grid cells
+sum(CHabDataObsJoin$MyPresAbs == "Presence") ## 2234 predicted presence in study area
+sum(CHabDataObsJoin$Critical == "Yes") ## 2846 points are in critical land in total
+sum(CHabDataObsJoin$Critical == "Yes"& CHabDataObsJoin$MyPresAbs == "Presence") ## 1174 presences are in critical land in total
 sum(na.omit(CHabDataObsJoin$Critical == "Yes"& CHabDataObsJoin$PresAbs == 1)) ## 496 observations are in critical land in total
-# 
-# cts <- as.data.frame(CHabDataObsJoin %>% 
-#                        group_by(Critical) %>% 
-#                        summarise(MyModPLPresence = sum(MyPresAbs == "Presence"),
-#                                  MyModPLAbsence = sum(MyPresAbs == "Absence"),
-#                                  Obs = sum(na.omit(PresAbs == 1))))
-# 
-# cts$geometry <- NULL
-# cts
-# 
-# write.csv(cts, "Tables/04_critical_habitat_presences.csv")
-# Critical MyModPLPresence        MyModPLAbsence Obs
-# No            1183                      12567 544 
-# Yes             936                     1335 423 
 
-## 2119 predicted presences in study area
-## 936 are on critical land - ~44%
-## 1183 are not on critical land - ~56%
-
-## 967 toad observations in total
-## 544 are on critical land - ~ 56%
-## 423 are not on critical land - ~44%
 
 # Map presences on critical habitat ---------------------------------------
 
@@ -480,7 +460,27 @@ presNot <- CHabDataObsJoin %>%
   filter(MyPresAbs == "Presence", Critical == "No")
 presNot
 
+CHabDataObsJoin
 
+
+# Presences on both -------------------------------------------------------
+PlandDataObsJoin
+crit <- CHabDataObsJoin %>%
+  select(x, y, cells, Critical, MyPresAbs)
+
+prot <- PlandDataObsJoin %>%
+  select( Protected)
+
+## join
+both <- as.data.frame(st_join(crit, prot, by = c("x", "y", "cells"))) %>%
+  filter(MyPresAbs == "Presence")
+
+
+
+## sum
+sum(both$Critical == "Yes" & both$Protected == "Yes")
+
+(541/2234)
 # Maps --------------------------------------------------------------------
 
 ## map presences on protected land
@@ -593,6 +593,7 @@ ggsave(m5, filename=file.name1, dpi=500, height=10, width=15)
 
 ## plot together
 allMaps <- plot_grid(m3,m4,m5)
+allMaps
 ## create directory 
 file.name1 <- paste("Figures/04_ALL_ON_ONE_CH_PL_OBS.jpg")
 ## save

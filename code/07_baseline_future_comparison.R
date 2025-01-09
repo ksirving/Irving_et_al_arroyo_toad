@@ -196,7 +196,7 @@ rSize <- DiffFuture %>%
 
 rSize
 
-
+write.csv(rSize, "Tables/07_diffs_range_size_per_sceanrio.csv")
 
 ## range overlap
 
@@ -209,7 +209,7 @@ rOverlap <- DiffFuture %>%
   mutate(OverlapPerc = (OverlapCount/BaselinePresences)*100) %>%
   full_join(rSize, by = c("Scenario", "BaselinePresences"))
 
-  
+rOverlap
   
 write.csv(rOverlap, "Tables/07_perc_diffs_range_size_overlap_scenarios.csv")
 

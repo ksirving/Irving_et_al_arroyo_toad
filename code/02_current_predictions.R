@@ -8,6 +8,9 @@ library(tidyverse)
 
 library(tidylog)
 library(DescTools)
+library("scales")
+
+?Mode
 
 
 # upload data -------------------------------------------------------------
@@ -16,9 +19,29 @@ library(DescTools)
 gridFile <- paste0("ignore/ModelResults/Gridded/")
 COMIDFile <- paste0("ignore/ModelResults/COMID/")
 
-## gridded env df with comids
-load(file = "ignore/00_RB9_grdded_data.RData") 
+## gridded env df 
+load(file = "ignore/01_RB9_grdded_data.RData") 
 head(data_hyd_sf2)
+
+## remove all FFM
+data_hyd_sf2 <- data_hyd_sf2 %>%
+  dplyr::select(-c(DS_Mag_50:Wet_BFL_Mag_50))
+
+## read in env data stack
+xvars <- stack("ignore/00_all_rasters_200m.tif") ## new rasters @ 200m 
+
+## upload and add layer names 
+load(file = "ignore/00_final_raster_layer_names.RData")
+names(xvars) <- LayerNames
+LayerNames
+
+## gridded env df 
+data_hyd_sf <- as.data.frame(xvars, xy=T)
+
+## remove NAs and make spatial
+data_hyd_sf <- na.omit(data_hyd_sf) %>%
+  dplyr::select(x,y) %>% st_as_sf(coords = c("x", "y"), crs = crs(xvars))
+
 
 # ## observations
 load(file=paste0("ignore/ModelResults/Gridded/Model1/all_presAbs_env_data.RData"))
@@ -38,8 +61,80 @@ nhd <- nhd %>%
   st_as_sf %>%
   st_simplify(dTolerance = 0.5, preserveTopology = T)
 
-## get data for just obs - for max sens/spec calculation
+nhd
 
+
+# Baseline Scenario data --------------------------------------------------
+
+## directory 
+rasFile <- "ignore/futurerasters/"
+
+## define scenarios
+scen <- c( "S21_")
+
+## use as baselayer
+elev <- raster("input_data/Elev.tif")
+
+## remove NAs from main df and make spatial
+data_hyd_sf <- na.omit(data_hyd_sf2) %>%
+  dplyr::select(x,y) %>% st_as_sf(coords = c("x", "y"), crs = crs(xvars))
+data_hyd_sf
+
+## get all files with .tif - these are the main rasters
+tifs <- list.files(path = rasFile, pattern = c(".tif$") )
+tifs
+
+  ## get the scenario we need (baseline)
+  tifsscen <- grep(paste(scen[1]), tifs)
+  tifsscen
+  
+  scen1 <- tifs[tifsscen]
+  scen1 ## has all FFM for one scenario
+  
+  ## upload rasters for scenario
+  hyd1 <- raster(paste0(rasFile, scen1[1]))
+  hyd2 <- raster(paste0(rasFile, scen1[2]))
+  hyd3 <- raster(paste0(rasFile, scen1[3]))
+  hyd4 <- raster(paste0(rasFile, scen1[4]))
+  hyd5 <- raster(paste0(rasFile, scen1[5]))
+  hyd6 <- raster(paste0(rasFile, scen1[6]))
+  hyd7 <- raster(paste0(rasFile, scen1[7]))
+  hyd8 <- raster(paste0(rasFile, scen1[8]))
+  hyd9 <- raster(paste0(rasFile, scen1[9]))
+  
+  ## stack all rasters
+  ffmR <- stack(hyd1, hyd2, hyd3, hyd4, hyd5, hyd6, hyd7, hyd8, hyd9)
+  ffmR
+  
+  ## resample to base layer
+  ffmRes <- resample(ffmR, elev, method = "bilinear")
+  
+  ## extract future data at grid cells
+  newData <- as.data.frame(raster::extract(ffmRes, data_hyd_sf, cellnumbers=TRUE))
+  # newData <- as.data.frame(newData)
+  
+  head(newData)
+  
+  ## remove scenario number from column names
+  names(newData) <- gsub(paste(scen), "", names(newData))
+  
+  ## change ffm names to match current names
+  newData <- newData %>%
+    rename(DS_Mag_50 = d_ds_mag_50,
+           FA_Mag = d_fa_mag,
+           Peak_10 = d_peak_10,
+           Peak_2 = d_peak_2,
+           SP_Mag = d_sp_mag,
+           Wet_BFL_Mag_10 = d_wet_bfl_mag_10,
+           Wet_BFL_Mag_50 = d_wet_bfl_mag_50,
+           Q99 = delta_q99) %>%
+    mutate(Scenario = paste(scen))
+  
+  ## join all other phys data
+  data_hyd_sf2 <- data_hyd_sf2 %>%
+    inner_join(newData, by = "cells")
+  
+  data_hyd_sf2
 # Predict on all rb9 region-------------------------------------------------------
 
 #Index refers to the right column of probabilities - in this model the second column, which is probs of "1"
@@ -161,9 +256,9 @@ for(m in models) {
 
 head(pred_env)
 head(pred_df)
+
 # Combining importance ----------------------------------------------------
 head(VarImpx)
-library("scales")
 
 range01 <- function(x){(x-min(x))/(max(x)-min(x))}
 ## get mean and scale and % to make relative
@@ -173,6 +268,7 @@ ImpMean <- VarImpx %>%
   mutate(MeanImpScaled = rescale(MeanImp)) %>%
   mutate(MeanImpPerc = (MeanImpScaled/sum(MeanImpScaled))*100)
 
+ImpMean
 ## humanise variables - check the remote senseing
 ImpMean <- ImpMean %>%
   mutate(VariableHuman = case_when(Variable == "DS_Mag_50" ~ "Dry Season Baseflow",
@@ -186,20 +282,20 @@ ImpMean <- ImpMean %>%
                                    Variable == "PercentSand" ~ "Sand (%)",
                                    Variable == "PercentClay" ~ "Clay (%)",
                                    Variable == "MRVBF" ~ "Index of Valley Bottom Flatness",
-                                   Variable == "AccFlow" ~ "Catchment Area",
+                                   Variable == "CatchArea" ~ "Catchment Area",
                                    Variable == "AWC_r" ~ "Water Storage Capacity",
                                    Variable == "Elev" ~ "Elevation",
                                    Variable == "Slope" ~ "Slope (%)",
                                    Variable == "VRM18" ~ "Vector Ruggedness Measure (18)",
                                    Variable == "VRM3" ~ "Vector Ruggedness Measure (3)",
-                                   Variable == "TC_042014_RB9.1_Med" ~ "April Brightness (Med)",
-                                   Variable == "TC_042014_RB9.2_Med" ~ "April Greenness (Med)",
-                                   Variable == "TC_042014_RB9.2_Var" ~ "April Greenness (Var)",
-                                   Variable == "TC_042014_RB9.3_Var" ~ "April Wetness (Var)",
-                                   Variable == "TC_092014_RB9.1_Var" ~ "Sept. Brightness (Var)",
-                                   Variable == "TC_092014_RB9.2_Var" ~ "Sept. Greenness (Var)",
-                                   Variable == "TC_092014_RB9.3_Med" ~ "Sept. Wetness (Med)",
-                                   Variable == "TC_092014_RB9.3_Var" ~ "Sept. Wetness (Var)"))
+                                   Variable == "TC_042014_RB9_1_Med" ~ "April Brightness (Med)",
+                                   Variable == "TC_042014_RB9_2_Med" ~ "April Greenness (Med)",
+                                   Variable == "TC_042014_RB9_2_Var" ~ "April Greenness (Var)",
+                                   Variable == "TC_042014_RB9_3_Var" ~ "April Wetness (Var)",
+                                   Variable == "TC_092014_RB9_1_Var" ~ "Sept. Brightness (Var)",
+                                   Variable == "TC_092014_RB9_2_Var" ~ "Sept. Greenness (Var)",
+                                   Variable == "TC_092014_RB9_3_Med" ~ "Sept. Wetness (Med)",
+                                   Variable == "TC_092014_RB9_3_Var" ~ "Sept. Wetness (Var)"))
 
 ## order in increasing values
 
@@ -286,11 +382,14 @@ bmask <- raster("input_data/Elev.tif")
 
 probs_sf <- probsx_mean %>%
   st_as_sf(coords=c("x", "y"), crs=crs(bmask), remove=F) 
-
+probs_sf
 ## save out
-st_write(probs_sf, "ignore/ModelResults/Gridded/Arroyo_Toad_Prob_Occurrence_RB9.shp", append=F)
+st_write(probs_sf, "ignore/ModelResults/Gridded/02_Arroyo_Toad_Prob_Occurrence_RB9.shp", append=F)
 
-probs_sf <- st_read("ignore/ModelResults/Gridded/Arroyo_Toad_Prob_Occurrence_RB9.shp")
+probs_sf <- st_read("ignore/ModelResults/Gridded/02_Arroyo_Toad_Prob_Occurrence_RB9.shp")
+dim(probs_sf)
+
+sum(probs_sf$ModePres == 1) ## 2767
 
 ## make spatial and transformCRS
 coordinates(probsx_mean) <- ~x+y
@@ -305,7 +404,7 @@ x <- bmask
   projection(x)<-"+proj=utm +zone=11 +datum=NAD83 +units=m +no_defs"
 
   ## save
-writeRaster(x, "ignore/ModelResults/Gridded/Arroyo_Toad_Prob_Occurrence_RB9.tif", format="GTiff", crs="+proj=geocent +ellps=GRS80 +units=m +no_defs", overwrite=TRUE)
+writeRaster(x, "ignore/ModelResults/Gridded/02_Arroyo_Toad_Prob_Occurrence_RB9.tif", format="GTiff", crs="+proj=geocent +ellps=GRS80 +units=m +no_defs", overwrite=TRUE)
   
 ## make rasters of presence absence in NAD83
 
@@ -313,15 +412,18 @@ x<-raster::rasterize(probsx_mean, x, field="ModePres", na.rm =TRUE, sp = TRUE)
 projection(x)<-"+proj=utm +zone=11 +datum=NAD83 +units=m +no_defs"
 
 ## save
-writeRaster(x, "ignore/ModelResults/Gridded/Arroyo_Toad_PresAbs_Occurrence_RB9.tif", format="GTiff", crs="+proj=geocent +ellps=GRS80 +units=m +no_defs", overwrite=TRUE)
+writeRaster(x, "ignore/ModelResults/Gridded/02_Arroyo_Toad_PresAbs_Occurrence_RB9.tif", format="GTiff", crs="+proj=geocent +ellps=GRS80 +units=m +no_defs", overwrite=TRUE)
 
 ## get obs and format. makespatial 
-obs <- NewDataObsSub %>% as.data.frame() %>%
-  dplyr::select(PresAbs, cells) %>%
-  inner_join(probs_sf, by = c("cells")) %>%
-  st_as_sf(coords=c("x", "y"), crs=crs(bmask), remove=F) 
-
+obs <- obs %>%
+  inner_join(probs_sf, by = c("cells")) #%>%
+  # st_as_sf(coords=c("x", "y"), crs=crs(bmask), remove=F)
+obs
 ## save out
 save(obs, file = "ignore/ModelResults/Gridded/02_obs_probs_current.RData" )
 
+### get comids from nhd
 
+# ProbsComs <- raster::extract(xvars, nhd, cellnumbers=TRUE)
+# 
+# ProbsComs

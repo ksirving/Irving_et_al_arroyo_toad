@@ -43,15 +43,16 @@ data_hyd_sf <- as.data.frame(xvars, xy=T)
 data_hyd_sf <- na.omit(data_hyd_sf) %>%
   dplyr::select(x,y) %>% st_as_sf(coords = c("x", "y"), crs = crs(xvars))
 
-## extract env data at obs points
+## extract env data 
 data_hyd_sfx <- raster::extract(xvars, data_hyd_sf, cellnumbers=TRUE)
 
 ## join and for mat coords
 data_hyd_sf2 <- as.data.frame(cbind(data_hyd_sfx, data_hyd_sf)) %>%
   mutate(x = unlist(map(geometry,1)),
-         y = unlist(map(geometry,2))) #%>%
-# rename(AWC = AWC_r)
+         y = unlist(map(geometry,2)))
 
+## save all env data
+save(data_hyd_sf2, file = "ignore/01_RB9_grdded_data.RData")
 
 ## format raster for bias surface
 mask <- xvars[[1]] >-1000
@@ -110,6 +111,7 @@ m
 for(m in models) {
    
   gridFile <- paste0("ignore/ModelResults/Gridded/", m,"/")
+  
   gridFile
 
 # KDE Bias Surface --------------------------------------------------------
@@ -149,17 +151,18 @@ a.spdf<-SpatialPointsDataFrame(a.sp, PA.abs)
 a.spdfx <- raster::extract(xvars, a.spdf, cellnumbers = T, df=T)
 ## add ID
 a.spdfx <- as.data.frame(cbind(a.spdf, a.spdfx)) %>% mutate(ID = paste0("P", ID))
-
+a.spdfx
 ##  extract raster at observations, format to join with pseudos
 sdata <- raster::extract(xvars, orig.sdata, cellnumbers = T, df=T)
+head(sdata)
 
 sdata1 <- as.data.frame(cbind(orig.sdata, sdata)) %>%
   st_as_sf(coords=c("Ras_Long",  "Ras_Lat"), crs = 4326, remove=F) %>%
   st_transform(crs = crs(xvars)) %>%
   mutate(x = unlist(map(geometry,1)),
          y = unlist(map(geometry,2))) %>% as.data.frame() %>%
-  dplyr::select(ID, PresAbs, cells, DS_Mag_50:TC_092014_RB9.3_Var, x,y) 
-
+  dplyr::select(ID, PresAbs, cells, DS_Mag_50:TC_092014_RB9_3_Var, x,y) 
+# head(sdata1)
 
 ## bind pseudo abs with observed p/a
 NewDataObsSub <- bind_rows(sdata1, a.spdfx) %>%
@@ -178,18 +181,17 @@ save(NewDataObsSub, file=paste0(gridFile, "all_presAbs_env_data.RData"))
 ## gridded
 all_data_obs <- NewDataObsSub %>%
   as.data.frame() %>% 
-  dplyr::select(ID, PresAbs, DS_Mag_50:TC_092014_RB9.3_Var) 
-
+  dplyr::select(ID, PresAbs, DS_Mag_50:TC_092014_RB9_3_Var) 
+names(all_data_obs)
 ## colineality, onl
 # testData <- NewDataObsSub %>%
-#   as.data.frame() %>% 
-#   dplyr::select(-c(ID, cells, Peak_5,PercentSilt, TC_042014_RB9.3_Med, 
-#                    TC_042014_RB9.1_Var, TC_092014_RB9.1_Med, TC_092014_RB9.2_Med,x,y)) 
-# 
-# 
+#   as.data.frame() %>%
+#   dplyr::select(-c(ID, cells, Peak_5,x,y))
+# #
+# #
 # corvars <-cor(all_data_obs[,c(3:ncol(all_data_obs))])
 # write.csv(corvars, paste0(gridFile, "all_data_cor.csv"))
-
+# 
 # ml <- lm(PresAbs ~ ., data=testData)
 # summary(ml)
 # check_collinearity(ml)
@@ -197,8 +199,8 @@ all_data_obs <- NewDataObsSub %>%
 
 # # REMOVE MULTI-COLINEAR VARIABLES
 all_data_obs <- all_data_obs %>%
-  select(-c(Peak_5, PercentSilt, TC_042014_RB9.3_Med, 
-            TC_042014_RB9.1_Var, TC_092014_RB9.1_Med, TC_092014_RB9.2_Med))
+  dplyr::select(-c(Peak_5, PercentSilt, TC_042014_RB9_3_Med, 
+            TC_042014_RB9_1_Var, TC_092014_RB9_1_Med, TC_092014_RB9_2_Med))
 # all_data_obs 
 
 
@@ -219,7 +221,7 @@ xdata <- all_data_obs[,c(3:ncol(all_data_obs))]
 #TEST Object is super important; Row number corresponds to paramerers, in output
 ( rf.model <- rf.modelSel(x=xdata, y=ydata, imp.scale="mir", ntree=b, nodesize=5) ) 
 
-# CREATE NEW XDATA BASED ON SELECTED MODEL AND RUN FINAL RF MODEL (Model 4)
+# CREATE NEW XDATA BASED ON SELECTED MODEL AND RUN FINAL RF MODEL
 #RF runs differently when you use symbolis languate (using ~ as in an Lin. Model... use the indexing approacy [y=rf.data[,1]...]
 
 sel.vars <- rf.model$PARAMETERS[[1]]# set to use 1 - lowest error rate and has all hydro vars
@@ -339,162 +341,163 @@ dev.off()
 
 } # end loop
 
-# Tuning ------------------------------------------------------------------
-## check tuning here, if error can be improved through mtry, rerun models 
 
-##  check error rates
-
-rf.final$err.rate[,1]
-
-oob.error.data <- data.frame(
-  Trees = rep(1:nrow(rf.final$err.rate), times = 3),
-  Type = rep(c("OOB", "0", "1"), each = nrow(rf.final$err.rate)),
-  Error = c(rf.final$err.rate[,"OOB"],
-            rf.final$err.rate[, "0"],
-            rf.final$err.rate[,"1"])
-)
-
-
-t1 <- ggplot(data=oob.error.data, aes(x=Trees, y=Error)) +
-  geom_line(aes(color=Type))
+# # Tuning ------------------------------------------------------------------
+# ## check tuning here, if error can be improved through mtry, rerun models 
+# 
+# ##  check error rates
+# 
+# rf.final$err.rate[,1]
+# 
+# oob.error.data <- data.frame(
+#   Trees = rep(1:nrow(rf.final$err.rate), times = 3),
+#   Type = rep(c("OOB", "0", "1"), each = nrow(rf.final$err.rate)),
+#   Error = c(rf.final$err.rate[,"OOB"],
+#             rf.final$err.rate[, "0"],
+#             rf.final$err.rate[,"1"])
+# )
+# 
+# 
+# t1 <- ggplot(data=oob.error.data, aes(x=Trees, y=Error)) +
+#   geom_line(aes(color=Type))
 # t1
-file.name2 <- paste0(gridFile, "oob_error_gridded.jpg")
-ggsave(t1, filename=file.name2, dpi=300, height=5, width=6)
-
-## check split
-
-oob.values <- vector(length=10)
-# oob.values
-
-for(i in 1:10) {
-  temp.model <- randomForest(y~., data=rf.data, mtry = i, ntree=b)
-  oob.values[i] <- temp.model$err.rate[nrow(temp.model$err.rate), 1]
-  
-}
-
-# oob.values
-# rf.final$mtry
-# mean(rf.final$err.rate[,1])
-
-
-# Response curves/relationships ------------------------------------------------
-
-## change in delta
-
-## test change in delta curves with absolute values
-## may need to be run with actual values, no delta
-
-## change to absolute
-rf.data.ch <- abs(rf.data[, -1]) %>%
-  mutate(Y = rf.data$Y)
-# names(rf.data.ch)
-
-## define ffm 
-
-ffm <- names(rf.data.ch)[11:16]
-# ffm
-
-## observation data with comids
-all_data_obs <- na.omit(all_data_obs)
-length(all_data_obs$COMID)
-
-# dim(rf.data)
+# file.name2 <- paste0(gridFile, "oob_error_gridded.jpg")
+# ggsave(t1, filename=file.name2, dpi=300, height=5, width=6)
+# 
+# ## check split
+# 
+# oob.values <- vector(length=10)
+# # oob.values
+# 
+# for(i in 1:10) {
+#   temp.model <- randomForest(y~., data=rf.data, mtry = i, ntree=b)
+#   oob.values[i] <- temp.model$err.rate[nrow(temp.model$err.rate), 1]
+#   
+# }
+# 
+# # oob.values
+# # rf.final$mtry
+# # mean(rf.final$err.rate[,1])
+# 
+# 
+# # Response curves/relationships ------------------------------------------------
+# 
+# ## change in delta
+# 
+# ## test change in delta curves with absolute values
+# ## may need to be run with actual values, no delta
+# 
+# ## change to absolute
+# rf.data.ch <- abs(rf.data[, -1]) %>%
+#   mutate(Y = rf.data$Y)
+# # names(rf.data.ch)
+# 
+# ## define ffm 
+# 
+# ffm <- names(rf.data.ch)[11:16]
+# # ffm
+# 
+# ## observation data with comids
+# all_data_obs <- na.omit(all_data_obs)
+# length(all_data_obs$COMID)
+# 
+# # dim(rf.data)
 # names(rf.data)
-
-## get means of all variables
-
-rf.data.mean <- rf.data %>%
-  pivot_longer(AvgClay:SP_Mag, names_to = "Variable", values_to="Value") %>%
-  group_by(Variable) %>%
-  summarise(MeanVal = mean(Value))
-
-## make data long - raw values of ffm
-
-rf.data.long <- rf.data %>%
-  pivot_longer(AvgClay:SP_Mag, names_to = "Variable", values_to="Value")
-
-# rf.data.long
-
-full_data <- NULL
-
-for(m in 1:length(ffm)) {
-  
-  metric <- ffm[m]
-  # metric
-  
-  metricVals <- rf.data %>%
-    pivot_longer(AvgClay:SP_Mag, names_to = "Variable", values_to="Value") %>%
-    filter(Variable %in% metric)
-  
-  # head(metricVals)
-  
-  ## get sequence to predict on
-  incr <- seq(min(metricVals$Value), max(metricVals$Value), (max(metricVals$Value)/20))
-  incr <- rev(incr)
-  
-  datax <- data.frame(incr)
-  # datax
-  
-  pred_df_incrx <- NULL
-  
-  ## replace mean of ffm with increment and predi using rf model
-  
-  for(i in 1: length(incr)) {
-    
-    
-    ## replace metric values with increment
-    data <- rf.data %>%
-      select(-paste(metric)) %>%
-      mutate(increment = incr[i])
-    # names(data)
-    
-    ## change name for prediction
-    colnames(data)[17] <- metric
-    
-    ## predict on increments one at a time
-    pred_df_incr <- as.data.frame(predict(rf.final, data, type="prob",  index=2, 
-                                          na.rm=TRUE, overwrite=TRUE, progress="window"))
-    
-    # pred_df_incr
-    pred_df_incr[,3] <- incr[i]
-    pred_df_incr[,4] <- i
-    
-    pred_df_incrx <- bind_rows(pred_df_incrx, pred_df_incr)
-    
-    
-    
-  }
-  
-  
-  
-  pred_df_incrx$COMID <- all_data_obs$COMID
-  pred_df_incrx$FFM <- metric
-  
-  ## change names and combine
-  colnames(pred_df_incrx)[1:4] <- c("ProbAbs", "ProbPres", "IncrementValue", "IncrementNumber")
-  
-  full_data <- bind_rows(full_data, pred_df_incrx)
-  
-}
-
-
-# head(full_data)
-# unique(full_data$FFM)
-
-coms <- unique(full_data$COMID)[c(1,4,46,87,245)]
-
-full_data_sub <- full_data %>%
-  filter(COMID %in% coms)
-
-
-## plot
-
-p1 <- ggplot(full_data_sub, aes(y= ProbPres, x = IncrementValue)) +
-  geom_path() +
-  facet_grid(rows = vars(COMID), cols = vars(FFM), scales = "free_x")
-
-p1
-
-file.name1 <- "Figures/01_incremental_preds_sep_coms.jpg"
-ggsave(p1, filename=file.name1, dpi=300, height=5, width=6)
-
+# 
+# ## get means of all variables
+# 
+# rf.data.mean <- rf.data %>%
+#   pivot_longer(DS_Mag_50:TC_092014_RB9_3_Var, names_to = "Variable", values_to="Value") %>%
+#   group_by(Variable) %>%
+#   summarise(MeanVal = mean(Value))
+# 
+# ## make data long - raw values of ffm
+# 
+# rf.data.long <- rf.data %>%
+#   pivot_longer(DS_Mag_50:TC_092014_RB9_3_Var, names_to = "Variable", values_to="Value")
+# 
+# # rf.data.long
+# 
+# full_data <- NULL
+# 
+# for(m in 1:length(ffm)) {
+#   
+#   metric <- ffm[m]
+#   # metric
+#   
+#   metricVals <- rf.data %>%
+#     pivot_longer(DS_Mag_50:TC_092014_RB9_3_Var, names_to = "Variable", values_to="Value") %>%
+#     filter(Variable %in% metric)
+#   
+#   # head(metricVals)
+#   
+#   ## get sequence to predict on
+#   incr <- seq(min(metricVals$Value), max(metricVals$Value), (max(metricVals$Value)/20))
+#   incr <- rev(incr)
+#   
+#   datax <- data.frame(incr)
+#   # datax
+#   
+#   pred_df_incrx <- NULL
+#   
+#   ## replace mean of ffm with increment and predi using rf model
+#   
+#   for(i in 1: length(incr)) {
+#     
+#     
+#     ## replace metric values with increment
+#     data <- rf.data %>%
+#       dplyr::select(-paste(metric)) %>%
+#       mutate(increment = incr[i])
+#     # names(data)
+#     
+#     ## change name for prediction
+#     colnames(data)[17] <- metric
+#     
+#     ## predict on increments one at a time
+#     pred_df_incr <- as.data.frame(predict(rf.final, data, type="prob",  index=2, 
+#                                           na.rm=TRUE, overwrite=TRUE, progress="window"))
+#     
+#     # pred_df_incr
+#     pred_df_incr[,3] <- incr[i]
+#     pred_df_incr[,4] <- i
+#     
+#     pred_df_incrx <- bind_rows(pred_df_incrx, pred_df_incr)
+#     
+#     
+#     
+#   }
+#   
+#   
+#   
+#   pred_df_incrx$COMID <- all_data_obs$COMID
+#   pred_df_incrx$FFM <- metric
+#   
+#   ## change names and combine
+#   colnames(pred_df_incrx)[1:4] <- c("ProbAbs", "ProbPres", "IncrementValue", "IncrementNumber")
+#   
+#   full_data <- bind_rows(full_data, pred_df_incrx)
+#   
+# }
+# 
+# 
+# # head(full_data)
+# # unique(full_data$FFM)
+# 
+# coms <- unique(full_data$COMID)[c(1,4,46,87,245)]
+# 
+# full_data_sub <- full_data %>%
+#   filter(COMID %in% coms)
+# 
+# 
+# ## plot
+# 
+# p1 <- ggplot(full_data_sub, aes(y= ProbPres, x = IncrementValue)) +
+#   geom_path() +
+#   facet_grid(rows = vars(COMID), cols = vars(FFM), scales = "free_x")
+# 
+# p1
+# 
+# file.name1 <- "Figures/01_incremental_preds_sep_coms.jpg"
+# ggsave(p1, filename=file.name1, dpi=300, height=5, width=6)
+# 
