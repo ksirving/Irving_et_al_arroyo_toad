@@ -5,6 +5,7 @@ library(tmaptools)
 library(RColorBrewer)
 library(viridis)
 library(cowplot)
+library(raster)
 
 library(sf)
 library(tidyverse)
@@ -32,7 +33,7 @@ sheds_sf<- st_read("ignore/SpatialData/SMCSheds2009/SMCSheds2009.shp") %>%
 
 beige_pal<-c("#f2dbb7","#eed9c4","#fff0db","#e4d5b7","#d9b99b")
 
-## prob oiccurences with pres/abs
+## prob occurences with pres/abs
 dataObs <- read.csv("ignore/04_prob_occ_current.csv")
 
 ## make spatial
@@ -110,7 +111,7 @@ CHab <- st_join(CHab, cnts, left = F)
 
 ## predictions on critical habitat
 
-CHabDataObsJoin <- st_read("ignore/Protected_Land/07_joined_critical_habitat_and_mod_data_binary.shp")
+CHabDataObsJoin <- st_read("ignore/Protected_Land/04_joined_critical_habitat_and_mod_data_binary.shp")
 
 ## polygons of protected land
 ## join with CHab

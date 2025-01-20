@@ -25,15 +25,6 @@ bmask <- raster("input_data/Elev.tif")
 # names(bmask) <- "COMID"
 bmask
 
-# gridsDF <- as.data.frame(bmask, xy=T) %>%
-#   st_as_sf(coords=c("x", "y"), crs=26911, remove=F)  %>%
-#   st_transform(crs = 9001)
-# 
-# head(gridsDF)
-# 
-# save(gridsDF, file = "ignore/00_10m_grids_comids_df.RData")
-# 
-# gridsDF <- na.omit(gridsDF)
 
 # length(unique(gridsDF$NHD_10m)) ## 2179
 

@@ -66,7 +66,12 @@ DiffFuture <- scenProbs2x %>%
   mutate(FuturePresAbs = factor(FuturePresAbs, levels = c("1","0"), labels = c("Presence", "Absence"))) %>%
   mutate(BasePresAbs = ifelse(Baseline < 0.535, 0, 1)) %>%
   mutate(BasePresAbs = factor(BasePresAbs, levels = c("1","0"), labels = c("Presence", "Absence"))) %>%
-  full_join(sp_dat, by = "cells", relationship = "many-to-many") 
+  full_join(sp_dat, by = "cells", relationship = "many-to-many")%>%
+  mutate(Scenario = factor(Scenario, levels = c("Baseline", "Wetter", "Drier", "Hotter", "Amplified Extremes",
+                                                  "Small Perturbations, drier/hotter", "Large Perturbations, drier/hotter",
+                                                  "Small Perturbations, wetter/hotter", "Large Perturbations, wetter/hotter",
+                                                  "Small Perturbations, extremes/hotter", "Large Perturbations, extremes/hotter")))
+
 
 DiffFuture
 unique(DiffFuture$Scenario)
@@ -157,21 +162,6 @@ ggsave(m3, filename=file.name1, dpi=600, height=10, width=15)
 
 
 
-# Sensitivity Analysis ----------------------------------------------------
-
-## differences in probability
-DiffFuture <- scenProbs2x %>%
-  mutate(Diffs = Probability-Baseline) %>%
-  mutate(Diffs2 = ifelse(Diffs <= -0.05, "Reduced", NA)) %>%
-  mutate(Diffs2 = ifelse(Diffs >= 0.05, "Increased", Diffs2)) %>%
-  mutate(Diffs2 = ifelse(is.na(Diffs2), "No Change", Diffs2)) %>%
-  mutate(FuturePresAbs = ifelse(Probability < 0.535, 0, 1)) %>%
-  mutate(FuturePresAbs = factor(FuturePresAbs, levels = c("1","0"), labels = c("Presence", "Absence"))) %>%
-  mutate(BasePresAbs = ifelse(Baseline < 0.535, 0, 1)) %>%
-  mutate(BasePresAbs = factor(BasePresAbs, levels = c("1","0"), labels = c("Presence", "Absence"))) %>%
-  full_join(sp_dat, by = "cells", relationship = "many-to-many") 
-
-
 
 # Differences in Predicted Presences ---------------------------------------
 
@@ -192,7 +182,7 @@ rSize <- DiffFuture %>%
   summarise(FuturePresences = length(FuturePresAbs)) %>%
   mutate(BaselinePresences = rSizebase$BaselinePresences) %>%
   mutate(DiffInRangeSize = BaselinePresences-FuturePresences) %>%
-  mutate(DiffInRangeSizePerc = (DiffInRangeSize/BaselinePresences)*100)
+  mutate(DiffInRangeSizePerc = (DiffInRangeSize/BaselinePresences)*100) 
 
 rSize
 

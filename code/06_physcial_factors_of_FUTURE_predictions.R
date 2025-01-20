@@ -42,21 +42,6 @@ newData <- read.csv("ignore/03_future_ffms.csv") %>%
                                Scenario == "S103" ~ "Small Perturbations, extremes/hotter")) %>%
   drop_na(Scenario2) 
 
-sum(is.na(newData))
-head(newData)
-
-unique(newData$Scenario2)
-
-# ## upload comids and cells 
-# coms <- read.csv("ignore/03_comids_cells_to_join_New.csv")
-# coms
-# ## join with new data
-# 
-# newDataComs <- full_join(coms, newData, by = "COMID", relationship = "many-to-many") %>%
-#   # rename(Scenario = scenario) %>%
-#   select(-X)
-# 
-# head(newDataComs)
 
 ## scenario results
 scenProbs <- read.csv("ignore/FuturePredictions/03_Av_Probs_Future_RB9_extremes_New.csv") %>%
@@ -216,8 +201,7 @@ basel <- PresOnly %>%
 ## define scenarios
 scens <- unique(PresOnly$Scenario2)
 scens
-scens[1]
-t=5
+
 ## define Metrics
 mets <- unique(PresOnly$Metric)
 mets
@@ -225,7 +209,7 @@ mets
 ## empty dataframe
 df <- data.frame(matrix(ncol = 7))
 colnames(df) <- c("Metric", "T_Statistic", "PValue", "DegreesOfFreedom", "nBaseline", "nFuture", "Scenario")
-
+df
 dfx <- NULL
 
 for(m in 1:length(mets)) {
@@ -253,7 +237,7 @@ for(m in 1:length(mets)) {
     
     ## t test with log transformed elevation
     ttest <- t.test(log(dat$Values), log(dat$FutureVal))
-   # ttest
+    
     ## get stats
     df[t,1] <- mets[m]
     df[t,2] <- ttest$statistic
@@ -261,8 +245,8 @@ for(m in 1:length(mets)) {
     df[t,4] <- ttest$parameter
     df[t,5] <- length(na.omit(dat$Values))
     df[t,6] <- length(na.omit(dat$FutureVal))
-    df[t,7] <- scens[t]
-    
+    df[t,7] <- paste(scens[t])
+   
     dfx <- bind_rows(dfx, df)
     
   
@@ -270,11 +254,20 @@ for(m in 1:length(mets)) {
   
 }
 
-ttest$statistic
-ttest$parameter
+head(dfx)
 
+## format df
 df <- dfx %>%
-  distinct()
+  distinct() %>%
+  drop_na(Scenario) %>%
+  mutate(Scenario2 = factor(Scenario, labels = c("Baseline", "Wetter","Drier", "Hotter","Amplified Extremes", "Small Perturbations, drier/hotter", "Large Perturbations, drier/hotter",
+                                                  "Small Perturbations, wetter/hotter", "Large Perturbations, wetter/hotter",
+                                                  "Small Perturbations, extremes/hotter", "Large Perturbations, extremes/hotter"),
+                            levels = c("Baseline", "Wetter","Drier", "Hotter","Amplified Extremes", 
+                                       "Drier/hotter (Small)", "Drier/hotter (Large)",
+                                       "Wetter/hotter (Small)", "Wetter/hotter (Large)",
+                                       "Extremes/hotter (Small)", "Extremes/hotter (Large)")))
+
 
 df$PValueR <- round(df$PValue, digits=5)
 
@@ -282,8 +275,7 @@ write.csv(df, "Tables/06_elevation_ffm_ttests.csv")
 
 head(dataObs2)
 
-df <- read.csv("Tables/06_elevation_ffm_ttests.csv") %>%
-  rename(Scenario2 = Scenario) %>% select(-X) 
+df <- read.csv("Tables/06_elevation_ffm_ttests.csv") %>% select(-X) 
 head(df)
 
 names(dataObs2)
@@ -523,63 +515,6 @@ perctabP
 write.csv(perctabP, "Tables/06_proportion_presences_on_prot_land_future_scens.csv")
 
 
-## same for pendleton
-# PendDataObsJoin <- PendDataObsJoin %>%
-#   mutate(Protected = ifelse(is.na(Landuse), "No", "Yes"))
-# 
-# PendDataObsJoin
-# 
-# sum(PendDataObsJoin$MyPresAbs == "Presence") ## 132993
-## convert to p/a
-# 
-# PlandDataObsJoin <- PlandDataObsJoin %>%
-#   mutate(MyPresAbs = ifelse(ProbOcc < 0.535, 0, 1)) %>%
-#   mutate(MyPresAbs = factor(MyPresAbs, levels = c("1","0"), labels = c("Presence", "Absence"))) %>%
-#   mutate(FuturePresAbs = ifelse(MeanProb < 0.535, 0, 1)) %>%
-#   mutate(FuturePresAbs = factor(FuturePresAbs, levels = c("1","0"), labels = c("Presence", "Absence"))) 
-
-## get summary states of presences on protected land
-# sumScens <- PendDataObsJoin %>% as.data.frame() %>%
-#   select(-c( geometry)) %>%
-#   # filter(FuturePresAbs == "Presence") %>% ## only presences
-#   group_by(Scenario2, Protected, FuturePresAbs) %>%
-#   summarise(Presences = length(FuturePresAbs)) %>%
-#   pivot_wider(names_from = "FuturePresAbs", values_from = "Presences") %>%
-#   ungroup(Protected) %>%
-#   mutate(TotalCellsP = sum(Presence), TotalCellsA = sum(Absence)) %>%
-#   group_by(Protected) %>%
-#   mutate(ProportionP = (Presence/TotalCellsP)*100) %>%
-#   mutate(ProportionA = (Absence/TotalCellsA)*100) 
-# 
-# sumScens
-# 
-# write.csv(sumScens, "Tables/06_number_presences_pendleton_future_scens_spatial.csv")
-# 
-# ## make percentage table - presences
-# perctabP <- sumScens %>% as.data.frame() %>%
-#   select(-c(Presence, Absence, TotalCellsP,  TotalCellsA, ProportionA)) %>%
-#   pivot_wider(names_from="Protected", values_from = "ProportionP") %>%
-#   # pivot_wider(names_from="Protected", values_from = "ProportionA") %>%
-#   select(-No) %>%
-#   drop_na()
-# # pivot_wider(names_from = FuturePresAbs, values_from = Yes)
-# 
-# perctabP
-# 
-# ## absences
-# perctabA <- sumScens %>% as.data.frame() %>%
-#   select(-c(Presence, Absence, TotalCellsP,  TotalCellsA, ProportionP)) %>%
-#   pivot_wider(names_from="Protected", values_from = "ProportionA") %>%
-#   # pivot_wider(names_from="Protected", values_from = "ProportionA") %>%
-#   select(-No) %>%
-#   drop_na()
-# # pivot_wider(names_from = FuturePresAbs, values_from = Yes)
-# 
-# perctabA
-# 
-# write.csv(perctabP, "Tables/06_proportion_presences_on_prot_land_future_scens.csv")
-
-
 ### Upload critical habitat data ----------------------------------------------
   
 CHab <- st_read("ignore/Critical_Habitat/ArroyoToadFinalCriticalHabitatUSFWSds129.shp")
@@ -681,3 +616,5 @@ perctab
 
 write.csv(perctab, "Tables/06_proportion_presences_on_critical_habitat_future_scens.csv")
 
+2234/16023
+421/2234

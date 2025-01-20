@@ -67,7 +67,6 @@ alldataDF <- alldataDF %>%
 
 dataObs <- full_join(alldataDF, obs, by = "cells")
 
-
 write.csv(dataObs, "ignore/04_prob_occ_current.csv")
 
 # elevation of observations -----------------------------------------------
@@ -475,10 +474,8 @@ prot <- PlandDataObsJoin %>%
 both <- as.data.frame(st_join(crit, prot, by = c("x", "y", "cells"))) %>%
   filter(MyPresAbs == "Presence")
 
-
-
 ## sum
-sum(both$Critical == "Yes" & both$Protected == "Yes")
+sum(both$Critical == "Yes" & both$Protected == "Yes") ## 541
 
 (541/2234)
 # Maps --------------------------------------------------------------------

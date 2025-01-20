@@ -91,7 +91,7 @@ tifs
   scen1 <- tifs[tifsscen]
   scen1 ## has all FFM for one scenario
   
-  ## upload rasters for scenario
+  ## upload FFM rasters for scenario
   hyd1 <- raster(paste0(rasFile, scen1[1]))
   hyd2 <- raster(paste0(rasFile, scen1[2]))
   hyd3 <- raster(paste0(rasFile, scen1[3]))
@@ -193,7 +193,7 @@ for(m in models) {
 
   VarImpx <- rbind(VarImpx, VarImp)
   
-  ## predict on data from only pbserved toad sites - for max sens/spec calculation
+  ## predict on data from only observed toad sites - for max sens/spec calculation
   pred <- predict(rf.final, NewDataObsSub, filename= paste0(gridFile, "SppProbs_no_clim_gridded.img"), type="prob",  index=2, 
                   na.rm=TRUE, overwrite=TRUE, progress="window")
   
