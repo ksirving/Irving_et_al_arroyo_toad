@@ -16,6 +16,16 @@ https://ftp.sccwrp.org/pub/download/PROJECTS/SDHydroVulnerabilityArroyoToad/Spat
 # protected land and critical habitat
 https://ftp.sccwrp.org/pub/download/PROJECTS/SDHydroVulnerabilityArroyoToad/ProtectedCriticalLand.zip
 
+## data products
+# probability of occurrence (current)
+https://sccwrp.maps.arcgis.com/home/item.html?id=97b2a848033d4cd5ab4b5e7d29d5d894
+
+# binary presence/absence
+https://sccwrp.maps.arcgis.com/home/item.html?id=09c91ea0eb104d96913aa575c70e80a8
+
+# probability of occurrence under future scenarios (csv)
+https://sccwrp.maps.arcgis.com/home/item.html?id=64524ffdbb3643dc9f0075c2fc11d551
+
 
 ## Code
 ## Functions 
