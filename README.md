@@ -184,3 +184,17 @@ A place to check data
 ## Script 9: citations.R
 
 citiations for packages used in analysis
+
+## Metadata links
+
+Observation data 
+Can not share at this time
+
+Environmental data for model build
+
+FFM for future scenarios
+
+Spatial Data
+
+
+

@@ -60,7 +60,7 @@ mask <- xvars[[1]] >-1000
 # Upload bio data -------------------------------------------------------------
 
 ## updated and snapped pres/abs
-bioSnap <- shapefile("input_data/ToadsObs_SnapToRaster.shp")
+bioSnap <- shapefile("ignore/ToadsObs_SnapToRaster.shp")
 head(bioSnap)
 
 orig.sdata <-  bioSnap %>% as.data.frame() %>% ## get coordinates of snapped points

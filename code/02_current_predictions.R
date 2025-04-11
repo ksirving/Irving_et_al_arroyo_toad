@@ -371,7 +371,7 @@ unique(probsx_mean$MeanThresh) ## 0.535
 
 ## save out
 write.csv(probsx_mean, "ignore/ModelResults/Gridded/02_Av_Probs_Current_RB9.csv")
-# probsx_mean <- st_read("ignore/ModelResults/Gridded/02_Av_Probs_Current_RB9.csv")
+probsx_mean <- st_read("ignore/ModelResults/Gridded/02_Av_Probs_Current_RB9.csv")
 # Formatting probability of occurrence --------------------------------------
 
 
