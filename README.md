@@ -2,7 +2,24 @@
 
 ## Species distribution model assessing impact of future climate-induced flow alteration on Arroyo Toad
 
+## input data downloads
+## all data
+https://ftp.sccwrp.org/pub/download/PROJECTS/SDHydroVulnerabilityArroyoToad/00_all_rasters_200m.tif
+## base raster
+https://ftp.sccwrp.org/pub/download/PROJECTS/SDHydroVulnerabilityArroyoToad/Elev.tif
+# delta FFM current rasters
+https://ftp.sccwrp.org/pub/download/PROJECTS/SDHydroVulnerabilityArroyoToad/Delta_Rasters.zip
+# delta FFM future scenario rasters - 
+https://ftp.sccwrp.org/pub/download/PROJECTS/SDHydroVulnerabilityArroyoToad/futurerasters.zip
+## spatial data
+https://ftp.sccwrp.org/pub/download/PROJECTS/SDHydroVulnerabilityArroyoToad/SpatialData.zip
+# protected land and critical habitat
+https://ftp.sccwrp.org/pub/download/PROJECTS/SDHydroVulnerabilityArroyoToad/ProtectedCriticalLand.zip
+
+
 ## Code
+## Functions 
+https://ftp.sccwrp.org/pub/download/PROJECTS/SDHydroVulnerabilityArroyoToad/Functions.R
 
 # Script 0: 00_gridded_200m_data_format.R
 
@@ -39,20 +56,21 @@ TC_042014_RB9.tif
 "Delta_Rasters/Wet_BFL_Mag_10_Delta.tif"
 "Delta_Rasters/Wet_BFL_Mag_50_Delta.tif"
 
+
 ## writes stacked raster will all environmental data 
 
-00_all_rasters_200m.tif
+00_all_rasters_200m.tif 
 00_final_raster_layer_names.RData ## and raster names
 
 # Script 1: 01_auto_gridded_model_no_climate.R
 
 Random forest SDM. Automates - 
 1 RF model
-2 Pseudo absenses
+2 Pseudo absences
 3 Partial Plots
 4 Proximity
 5 Validation
-6 Model coeficients
+6 Model coefficients
 7 Relative importance
 
 Runs 10 x models and saves files separately
@@ -74,10 +92,10 @@ Input data needed -
 01_RB9_grdded_data.RData ## df of raster environmental data
 00_final_raster_layer_names.RData ## raster layer names
 NHD_reaches_RB9_castreamclassification.shp ## NHD reaches for staudy area
-Elev.tif ## base raster
+Elev.tif 
 
 Also, uses baseline scenario as current conditions
-ignore/futurerasters -  UPDATE!!!!
+
 
 ## Saves
 02_relative_importance_mean.csv ## mean relative importance 
@@ -86,13 +104,13 @@ ignore/futurerasters -  UPDATE!!!!
 02_Arroyo_Toad_Prob_Occurrence_RB9.shp ## mean probability of occurrence spatial
 02_Arroyo_Toad_Prob_Occurrence_RB9.tif ## mean probability of occurrence raster
 
+
 # Script 3: 03_future predictions.R
 
 Predicts toad under future scenarios and combines probabilities over models
 
 Input data needed
-All future scenario rasters - ignore/futurerasters -  UPDATE!!!!
-
+future scenarios 
 # Saves
 03_Av_Probs_Future_RB9_extremes_New.csv ## probabilities for all scenarios
 
@@ -111,6 +129,7 @@ All predictions from Script 02
 Pendleton_95.shp ## Camp pendleton 
 CPAD_2023a_Holdings.shp ## Protected Land
 ArroyoToadFinalCriticalHabitatUSFWSds129.shp ## Critical habitat
+
 
 # spatial data
 SD_RB9_boundary.shp ## study area polygon
