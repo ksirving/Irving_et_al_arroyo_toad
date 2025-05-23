@@ -18,13 +18,13 @@ https://ftp.sccwrp.org/pub/download/PROJECTS/SDHydroVulnerabilityArroyoToad/Prot
 
 ## data products
 # probability of occurrence (current)
-https://sccwrp.maps.arcgis.com/home/item.html?id=97b2a848033d4cd5ab4b5e7d29d5d894
+https://sccwrp.maps.arcgis.com/home/item.html?id=0b84fcfdab284fa2bd1e1b5bb4cdb617
 
 # binary presence/absence
-https://sccwrp.maps.arcgis.com/home/item.html?id=09c91ea0eb104d96913aa575c70e80a8
+https://sccwrp.maps.arcgis.com/home/item.html?id=fb8fa42dde5e4549b6166871b61f03d2
 
-# probability of occurrence under future scenarios (csv)
-https://sccwrp.maps.arcgis.com/home/item.html?id=64524ffdbb3643dc9f0075c2fc11d551
+# probability of occurrence under future scenarios
+https://sccwrp.maps.arcgis.com/home/item.html?id=ad4bdfc4cf1541d3956c2357bb16eaf4
 
 
 ## Code

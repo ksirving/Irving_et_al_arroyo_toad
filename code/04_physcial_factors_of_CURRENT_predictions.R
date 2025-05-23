@@ -183,11 +183,6 @@ class(PlandP)
 st_write(PlandP, "ignore/04_pendleton_protected_land_combined_spatial.shp", append = F)
 sum(is.na(PlandP$UNIT_NAME)) ## 0
 
-## join pendleton to protected land
-# PlandP <- st_union(Pland, Pend)
-
-# plot(PlandP[2])
-
 # raster data df 
 ## make spatial
 dataObsSP <- dataObs2 %>%
@@ -347,7 +342,7 @@ cnts <- st_read("/Users/katieirving/Library/CloudStorage/OneDrive-SharedLibrarie
 cnts <- cnts %>%
   st_transform(crs=st_crs(CHab)) 
 
-## join with pland - subsets to rb9 region
+## join with chab - subsets to rb9 region
 CHab <- st_join(CHab, cnts, left = F)
 
 # raster data df 
@@ -478,6 +473,30 @@ both <- as.data.frame(st_join(crit, prot, by = c("x", "y", "cells"))) %>%
 sum(both$Critical == "Yes" & both$Protected == "Yes") ## 541
 
 (541/2234)
+
+
+# Overlap critical and protected land -------------------------------------
+
+head(Plandx)
+head(CHabx)
+
+sum(Plandx$cells %in% CHabx$cells) ## 1361
+length(CHabx$cells) ## 2846
+length(Plandx$cells) ## 7077
+
+## percent shared
+1361/(2846 + 7077 -1361) *100
+# 15.9%
+
+## percent of chab
+(1361/2846) *100
+# 47.8%
+
+## percent of pland
+(1361/7077) *100
+# 19.2%
+
+
 # Maps --------------------------------------------------------------------
 
 ## map presences on protected land
